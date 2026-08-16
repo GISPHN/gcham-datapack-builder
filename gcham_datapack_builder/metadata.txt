@@ -1,0 +1,20 @@
+[general]
+name=G-CHAM Data Pack Builder
+qgisMinimumVersion=3.44
+qgisMaximumVersion=4.99
+description=Builds municipal G-CHAM data packs from 2020 Census 250 m mesh statistics and Japanese administrative boundaries.
+about=G-CHAM Data Pack Builder automates the creation of municipal FlatGeobuf data packs for GIS-based Community Health Assessment Methods (G-CHAM). It downloads six 2020 Population Census 250 m mesh tables from e-Stat and 2026 N03 administrative boundaries from the National Land Numerical Information service, joins selected attributes by KEY_CODE, handles suppressed and aggregated meshes, calculates age-group percentages, assigns intact meshes to municipalities by mesh-center location, and writes styled FlatGeobuf layers. Unlike general Japanese mesh readers, this plugin automates source download, multi-table integration, the G-CHAM field preset, suppression handling, administrative-boundary preparation, municipal allocation, CRS conversion, and municipality-specific outputs in one workflow.
+version=1.0.0
+author=GISPHN (Ryo Horiike)
+email=ryo.horiike@naramed-u.ac.jp
+repository=https://github.com/GISPHN/gcham-datapack-builder
+tracker=https://github.com/GISPHN/gcham-datapack-builder/issues
+homepage=https://github.com/GISPHN/gcham-datapack-builder#readme
+category=Vector
+icon=icon.png
+experimental=False
+deprecated=False
+tags=G-CHAM,census,e-Stat,population,mesh,250m,FlatGeobuf,Japan,public health,administrative boundaries
+changelog=1.0.0 - First stable public release. Automates six-table 2020 Census download and integration, G-CHAM preset selection, suppression handling, age-group percentages, N03 administrative boundaries, municipality allocation by mesh center, JGD2011 plane rectangular CRS output, FlatGeobuf export, and automatic styling.
+    0.1.1 - Fixed municipality FlatGeobuf finalization and QGIS loading; added plane rectangular CRS output and automatic styles.
+    0.1.0 - Initial development build.
