@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: QGIS general support
+    url: https://qgis.org/community/
+    about: Use QGIS community support for questions unrelated to this plugin.
