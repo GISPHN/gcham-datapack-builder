@@ -98,7 +98,7 @@ For a suppressed aggregation feature containing multiple mesh parts, the aggrega
 
 Outputs use JGD2011 Japan Plane Rectangular Coordinate System coordinates. For example, Nara Prefecture uses Zone VI (`EPSG:6674`).
 
-Some prefectures, particularly Hokkaido, Tokyo, Kagoshima, and Okinawa, span multiple official plane-rectangular zones. Version 1.0.0 uses a prefecture-level principal zone for the combined prefecture workflow and records a warning in the execution log for these prefectures. Users working with remote islands or precision-sensitive projected measurements should verify the appropriate local zone for their intended analysis.
+Some prefectures, particularly Hokkaido, Tokyo, Kagoshima, and Okinawa, span multiple official plane-rectangular zones. Version 1.0.1 uses a prefecture-level principal zone for the combined prefecture workflow and records a warning in the execution log for these prefectures. Users working with remote islands or precision-sensitive projected measurements should verify the appropriate local zone for their intended analysis.
 
 ## Installation
 
@@ -196,6 +196,6 @@ G-CHAM Data Pack Builder は、**GIS-based Community Health Assessment Methods�
 
 行政区域で250mメッシュをクリップしません。メッシュ中心点によって所属自治体を一意に決定し、元の250mメッシュ形状を保持します。
 
-北海道、東京都、鹿児島県、沖縄県など、複数の平面直角座標系にまたがる都道府県については、v1.0.0では都道府県全体の処理に主要区域の系を使用し、実行ログに注意を表示します。離島等を含む高精度な距離・面積解析を行う場合は、目的地域に適した系を確認してください。
+北海道、東京都、鹿児島県、沖縄県など、複数の平面直角座標系にまたがる都道府県については、v1.0.1では都道府県全体の処理に主要区域の系を使用し、実行ログに注意を表示します。離島等を含む高精度な距離・面積解析を行う場合は、目的地域に適した系を確認してください。
 
 データの利用・再配布にあたっては、e-Stat、国土数値情報、国土地理院等の最新の利用条件を確認してください。詳細は [DATA_SOURCES.md](DATA_SOURCES.md) に整理しています。

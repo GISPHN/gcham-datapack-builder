@@ -6,7 +6,7 @@ authors:
   - family-names: "Horiike"
     given-names: "Ryo"
     email: "ryo.horiike@naramed-u.ac.jp"
-version: "1.0.0"
+version: "1.0.1"
 date-released: "2026-08-17"
 license: "GPL-2.0-or-later"
 repository-code: "https://github.com/GISPHN/gcham-datapack-builder"

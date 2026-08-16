@@ -4,6 +4,17 @@ All notable changes to G-CHAM Data Pack Builder are documented in this file.
 
 The project follows semantic versioning where practical.
 
+## 1.0.1 - 2026-08-17
+
+Security hardening release required by the QGIS Official Plugin Repository scanner.
+
+### Security
+- Replaced dynamically constructed suppression-validation and base-row-count `SELECT` statements with fixed SQL statements.
+- Retained dynamic SQL only where SQLite requires dynamic identifiers; identifiers are fixed by `STAT_TABLES` or escaped with `_sql_ident`, with narrowly scoped Bandit `B608` annotations.
+- Removed silent `try/except/pass` writer-finalization and styling paths flagged by Bandit `B110`.
+- Replaced other silent exception-pass paths in file replacement and numeric parsing with explicit control flow.
+- Added Bandit analysis to GitHub Actions.
+
 ## 1.0.0 - 2026-08-17
 
 First public release prepared for the QGIS Official Plugin Repository.

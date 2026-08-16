@@ -120,10 +120,10 @@ def parse_stat_value(value: str | None):
     except ValueError:
         try:
             f = float(s)
-            if math.isfinite(f):
-                return f
         except ValueError:
-            pass
+            return s
+        if math.isfinite(f):
+            return f
     return s
 
 

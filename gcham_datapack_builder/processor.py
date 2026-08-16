@@ -61,6 +61,67 @@ from .qgis_io import (
 )
 
 
+_SUPPRESSION_VALIDATION_SQL = {
+    "T001145": """
+        SELECT b.KEY_CODE,
+               b.HTKSYORI, x.HTKSYORI,
+               b.HTKSAKI, x.HTKSAKI,
+               b.GASSAN, x.GASSAN
+        FROM s_T001142 b JOIN s_T001145 x USING(KEY_CODE)
+        WHERE COALESCE(b.HTKSYORI,0) <> COALESCE(x.HTKSYORI,0)
+           OR COALESCE(b.HTKSAKI,'') <> COALESCE(x.HTKSAKI,'')
+           OR COALESCE(b.GASSAN,'') <> COALESCE(x.GASSAN,'')
+        LIMIT 1
+    """,
+    "T001196": """
+        SELECT b.KEY_CODE,
+               b.HTKSYORI, x.HTKSYORI,
+               b.HTKSAKI, x.HTKSAKI,
+               b.GASSAN, x.GASSAN
+        FROM s_T001142 b JOIN s_T001196 x USING(KEY_CODE)
+        WHERE COALESCE(b.HTKSYORI,0) <> COALESCE(x.HTKSYORI,0)
+           OR COALESCE(b.HTKSAKI,'') <> COALESCE(x.HTKSAKI,'')
+           OR COALESCE(b.GASSAN,'') <> COALESCE(x.GASSAN,'')
+        LIMIT 1
+    """,
+    "T001197": """
+        SELECT b.KEY_CODE,
+               b.HTKSYORI, x.HTKSYORI,
+               b.HTKSAKI, x.HTKSAKI,
+               b.GASSAN, x.GASSAN
+        FROM s_T001142 b JOIN s_T001197 x USING(KEY_CODE)
+        WHERE COALESCE(b.HTKSYORI,0) <> COALESCE(x.HTKSYORI,0)
+           OR COALESCE(b.HTKSAKI,'') <> COALESCE(x.HTKSAKI,'')
+           OR COALESCE(b.GASSAN,'') <> COALESCE(x.GASSAN,'')
+        LIMIT 1
+    """,
+    "T001198": """
+        SELECT b.KEY_CODE,
+               b.HTKSYORI, x.HTKSYORI,
+               b.HTKSAKI, x.HTKSAKI,
+               b.GASSAN, x.GASSAN
+        FROM s_T001142 b JOIN s_T001198 x USING(KEY_CODE)
+        WHERE COALESCE(b.HTKSYORI,0) <> COALESCE(x.HTKSYORI,0)
+           OR COALESCE(b.HTKSAKI,'') <> COALESCE(x.HTKSAKI,'')
+           OR COALESCE(b.GASSAN,'') <> COALESCE(x.GASSAN,'')
+        LIMIT 1
+    """,
+    "T001199": """
+        SELECT b.KEY_CODE,
+               b.HTKSYORI, x.HTKSYORI,
+               b.HTKSAKI, x.HTKSAKI,
+               b.GASSAN, x.GASSAN
+        FROM s_T001142 b JOIN s_T001199 x USING(KEY_CODE)
+        WHERE COALESCE(b.HTKSYORI,0) <> COALESCE(x.HTKSYORI,0)
+           OR COALESCE(b.HTKSAKI,'') <> COALESCE(x.HTKSAKI,'')
+           OR COALESCE(b.GASSAN,'') <> COALESCE(x.GASSAN,'')
+        LIMIT 1
+    """,
+}
+
+_BASE_COUNT_SQL = "SELECT COUNT(*) FROM s_T001142"
+
+
 @dataclass
 class BuildOptions:
     pref_code: str
@@ -222,7 +283,7 @@ class DataPackProcessor:
                 f'{suffix})'
             )
             placeholders = ",".join("?" for _ in range(4 + len(codes)))
-            insert_sql = f"INSERT OR REPLACE INTO {table} VALUES ({placeholders})"
+            insert_sql = f"INSERT OR REPLACE INTO {table} VALUES ({placeholders})"  # nosec B608 -- table is selected only from STAT_TABLES; values are bound parameters.
             batch = []
             count = 0
             for row in iter_estat_rows(archives[stats_id]):
@@ -260,22 +321,10 @@ class DataPackProcessor:
         return conn, type_map, selected_by_table
 
     def _validate_suppression(self, conn: sqlite3.Connection):
-        base = f"s_{BASE_STATS_ID}"
         for stats_id, table_name in STAT_TABLES:
             if stats_id == BASE_STATS_ID:
                 continue
-            table = f"s_{stats_id}"
-            sql = f"""
-                SELECT b.KEY_CODE,
-                       b.HTKSYORI, x.HTKSYORI,
-                       b.HTKSAKI, x.HTKSAKI,
-                       b.GASSAN, x.GASSAN
-                FROM {base} b JOIN {table} x USING(KEY_CODE)
-                WHERE COALESCE(b.HTKSYORI,0) <> COALESCE(x.HTKSYORI,0)
-                   OR COALESCE(b.HTKSAKI,'') <> COALESCE(x.HTKSAKI,'')
-                   OR COALESCE(b.GASSAN,'') <> COALESCE(x.GASSAN,'')
-                LIMIT 1
-            """
+            sql = _SUPPRESSION_VALIDATION_SQL[stats_id]
             row = conn.execute(sql).fetchone()
             if row:
                 raise RuntimeError(
@@ -303,7 +352,9 @@ class DataPackProcessor:
             joins.append(
                 f"LEFT JOIN s_{sid} {aliases[sid]} ON {aliases[sid]}.KEY_CODE={base_alias}.KEY_CODE"
             )
-        sql = (
+        # Column identifiers come only from parsed e-Stat headers and are quoted via _sql_ident;
+        # table names and aliases come only from the fixed STAT_TABLES constant.
+        sql = (  # nosec B608 -- dynamic identifiers are strictly quoted/whitelisted; data values are never interpolated.
             "SELECT " + ", ".join(parts) + f" FROM s_{BASE_STATS_ID} {base_alias} "
             + " ".join(joins)
         )
@@ -391,10 +442,7 @@ class DataPackProcessor:
         if mode == "overwrite":
             for p in existing:
                 remove_existing_layer_for_path(p)
-                try:
-                    p.unlink()
-                except FileNotFoundError:
-                    pass
+                p.unlink(missing_ok=True)
 
         self.progress(25, "行政区域FGBを作成しています")
         for i, code in enumerate(target_codes):
@@ -439,7 +487,7 @@ class DataPackProcessor:
                         "注: 比率・平均等の非加算項目は秘匿元メッシュの値を加算せず、合算先の公表値を保持します。"
                     )
 
-                total = conn.execute(f"SELECT COUNT(*) FROM s_{BASE_STATS_ID}").fetchone()[0]
+                total = conn.execute(_BASE_COUNT_SQL).fetchone()[0]
 
                 for row_no, row in enumerate(query, start=1):
                     if row_no % 1000 == 0:
@@ -510,17 +558,10 @@ class DataPackProcessor:
                                 )
                     emitted += 1
             finally:
-                # FlatGeobuf is finalized when the QgsVectorFileWriter object is destroyed.
-                # Explicitly remove all local references before attempting to reopen files.
-                try:
-                    muni_writer = None
-                except Exception:
-                    pass
+                # FlatGeobuf is finalized when QgsVectorFileWriter is destroyed.
+                # Drop every local reference before reopening any output layer.
+                muni_writer = None
                 if pref_writer is not None:
-                    try:
-                        pref_writer.flushBuffer()
-                    except Exception:
-                        pass
                     _pref_to_close = pref_writer
                     pref_writer = None
                     del _pref_to_close

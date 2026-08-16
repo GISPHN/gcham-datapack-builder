@@ -332,28 +332,22 @@ def create_fgb_writer(path: Path, fields: QgsFields, target_epsg: int) -> QgsVec
 
 
 def close_writer(writer: QgsVectorFileWriter | None) -> None:
-    """Finalize OGR-backed writer by dropping all Python references.
+    """Release an OGR-backed writer reference and force Python cleanup.
 
-    FlatGeobuf writes its index/footer at dataset close. Keeping a SIP wrapper
-    alive can therefore leave a file unreadable by OGR until the object is
-    destroyed.
+    FlatGeobuf writes its index/footer when the dataset is closed. QGIS'
+    QgsVectorFileWriter does not require an explicit flush call here; releasing
+    the SIP wrapper is the reliable cross-version finalization path.
     """
     if writer is None:
         return
-    try:
-        writer.flushBuffer()
-    except Exception:
-        pass
+    del writer
+    gc.collect()
 
 
 def close_writers(writers: dict[str, QgsVectorFileWriter]) -> None:
     # Pop one at a time so the dictionary cannot retain a writer reference.
     while writers:
         _key, writer = writers.popitem()
-        try:
-            writer.flushBuffer()
-        except Exception:
-            pass
         del writer
     gc.collect()
 
@@ -407,16 +401,12 @@ def style_admin_layer(layer: QgsVectorLayer) -> None:
         }
     )
     symbol.setOpacity(0.70)
-    try:
-        sl = symbol.symbolLayer(0)
+    sl = symbol.symbolLayer(0)
+    if sl is not None:
         sl.setStrokeWidth(0.96)
         sl.setStrokeWidthUnit(_mm_render_unit())
-        try:
-            sl.setPenJoinStyle(Qt.PenJoinStyle.BevelJoin)
-        except AttributeError:
-            sl.setPenJoinStyle(Qt.BevelJoin)
-    except Exception:
-        pass
+        pen_join_scope = getattr(Qt, "PenJoinStyle", Qt)
+        sl.setPenJoinStyle(getattr(pen_join_scope, "BevelJoin"))
     layer.renderer().setSymbol(symbol)
 
     # Label with ward name when present, otherwise municipality name.
@@ -472,14 +462,11 @@ def style_population_layer(layer: QgsVectorLayer, value_field: str = "人口（�
             QgsRendererRangeLabelFormat("%1 - %2", 0, True),
         )
     except TypeError:
-        # Fallback for bindings with the shorter overload.
+        # Fallback for bindings with the shorter overload. QGIS will generate
+        # default range labels for this overload, so no silent exception is needed.
         renderer = QgsGraduatedSymbolRenderer.createRenderer(
             layer, value_field, 10, _jenks_mode(), symbol, ramp
         )
-        try:
-            renderer.setLabelFormat(QgsRendererRangeLabelFormat("%1 - %2", 0, True), True)
-        except Exception:
-            pass
     if renderer is not None:
         layer.setRenderer(renderer)
         layer.triggerRepaint()
