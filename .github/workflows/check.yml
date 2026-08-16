@@ -1,0 +1,22 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Python sources
+        run: python -m compileall -q gcham_datapack_builder
+      - name: Run core tests
+        run: python -m unittest discover -s tests -v
+      - name: Build and validate plugin ZIP
+        run: |
+          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.0.0.zip
+          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.0.0.zip
