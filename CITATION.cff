@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use G-CHAM Data Pack Builder in research, please cite the software and the underlying government data sources."
+title: "G-CHAM Data Pack Builder"
+type: software
+authors:
+  - family-names: "Horiike"
+    given-names: "Ryo"
+    email: "ryo.horiike@naramed-u.ac.jp"
+version: "1.0.0"
+date-released: "2026-08-17"
+license: "GPL-2.0-or-later"
+repository-code: "https://github.com/GISPHN/gcham-datapack-builder"
+url: "https://github.com/GISPHN/gcham-datapack-builder"
+keywords:
+  - QGIS
+  - G-CHAM
+  - census
+  - population mesh
+  - public health
+  - Japan
