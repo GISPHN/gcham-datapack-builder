@@ -1,0 +1,36 @@
+name: Apply v1.0.1 security fix
+
+on:
+  push:
+    paths:
+      - "scripts/apply_security_fix_101.py"
+      - ".github/workflows/security_fix_101.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply security hardening
+        run: python scripts/apply_security_fix_101.py
+      - name: Remove one-time migration files
+        run: |
+          rm scripts/apply_security_fix_101.py
+          rm .github/workflows/security_fix_101.yml
+      - name: Verify syntax and tests
+        run: |
+          python -m compileall -q gcham_datapack_builder
+          python -m unittest discover -s tests -v
+      - name: Commit v1.0.1
+        run: |
+          git config user.name "GISPHN"
+          git config user.email "ryo.horiike@naramed-u.ac.jp"
+          git add -A
+          git commit -m "Release 1.0.1 security hardening"
+          git push
