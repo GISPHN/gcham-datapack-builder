@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a reproducible problem in G-CHAM Data Pack Builder
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for reporting a problem. Please do not include personal or confidential data."
+  - type: input
+    id: qgis
+    attributes:
+      label: QGIS version
+      placeholder: "e.g. 4.2.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. Windows 11"
+    validations:
+      required: true
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin version
+      placeholder: "e.g. 1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: area
+    attributes:
+      label: Prefecture / municipality selection
+      placeholder: "e.g. Nara Prefecture, all municipalities"
+  - type: dropdown
+    id: cache
+    attributes:
+      label: Reused cached downloads?
+      options:
+        - "Yes"
+        - "No"
+        - "Not sure"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Describe the smallest sequence of actions that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error message / plugin log
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
