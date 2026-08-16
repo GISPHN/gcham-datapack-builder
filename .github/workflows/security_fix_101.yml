@@ -19,15 +19,15 @@ jobs:
           python-version: "3.12"
       - name: Apply security hardening
         run: python scripts/apply_security_fix_101.py
-      - name: Remove one-time migration files
+      - name: Keep workflow files unchanged for this push
         run: |
+          git checkout -- .github/workflows/check.yml
           rm scripts/apply_security_fix_101.py
-          rm .github/workflows/security_fix_101.yml
       - name: Verify syntax and tests
         run: |
           python -m compileall -q gcham_datapack_builder
           python -m unittest discover -s tests -v
-      - name: Commit v1.0.1
+      - name: Commit v1.0.1 source changes
         run: |
           git config user.name "GISPHN"
           git config user.email "ryo.horiike@naramed-u.ac.jp"
