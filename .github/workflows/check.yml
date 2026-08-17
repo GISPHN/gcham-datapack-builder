@@ -12,15 +12,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install security scanner
-        run: python -m pip install --disable-pip-version-check bandit
+      - name: Install scanners
+        run: python -m pip install --disable-pip-version-check bandit flake8
       - name: Bandit security scan
         run: bandit -r gcham_datapack_builder -q
-      - name: Compile Python sources
-        run: python -m compileall -q gcham_datapack_builder
+      - name: Undefined-name scan
+        run: flake8 gcham_datapack_builder --select=F821
+      - name: Parse Python sources without generating bytecode
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          for path in Path('gcham_datapack_builder').rglob('*.py'):
+              ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+          print('Python AST parse passed')
+          PY
       - name: Run core tests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
         run: python -m unittest discover -s tests -v
       - name: Build and validate plugin ZIP
         run: |
-          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.0.1.zip
-          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.0.1.zip
+          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.1.1.zip
+          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.1.1.zip

@@ -2,9 +2,9 @@
 name=G-CHAM Data Pack Builder
 qgisMinimumVersion=3.44
 qgisMaximumVersion=4.99
-description=Builds municipal G-CHAM data packs from 2020 Census 250 m mesh statistics and Japanese administrative boundaries.
-about=G-CHAM Data Pack Builder automates the creation of municipal FlatGeobuf data packs for GIS-based Community Health Assessment Methods (G-CHAM). It downloads six 2020 Population Census 250 m mesh tables from e-Stat and 2026 N03 administrative boundaries from the National Land Numerical Information service, joins selected attributes by KEY_CODE, handles suppressed and aggregated meshes, calculates age-group percentages, assigns intact meshes to municipalities by mesh-center location, and writes styled FlatGeobuf layers. Unlike general Japanese mesh readers, this plugin automates source download, multi-table integration, the G-CHAM field preset, suppression handling, administrative-boundary preparation, municipal allocation, CRS conversion, and municipality-specific outputs in one workflow.
-version=1.0.1
+description=Builds Japanese G-CHAM data packs from Census, administrative, facility, transport, disaster, and basemap sources.
+about=G-CHAM Data Pack Builder automates the creation of GIS-based Community Health Assessment Methods (G-CHAM) data packs for Japan. It downloads and integrates six 2020 Population Census 250 m mesh tables, 2026 N03 administrative boundaries, facility and transport datasets from National Land Numerical Information, GSI designated evacuation-site/shelter data, and J-SHIS probabilistic seismic-hazard information, and can add OpenStreetMap/GSI basemaps. Generated vector data are written as FlatGeobuf in the selected prefecture's JGD2011 Japan Plane Rectangular Coordinate System. The plugin handles Census suppression/aggregation, municipality allocation, derived age-group percentages, styling, labels, caching, and layer grouping. Road data are optional and disabled by default because downloads can be large. Spatial coverage is Japan. Internet access is required for source downloads and online map services. No external Python packages, API keys, user accounts, or personal information are required.
+version=1.1.1
 author=GISPHN (Ryo Horiike)
 email=ryo.horiike@naramed-u.ac.jp
 repository=https://github.com/GISPHN/gcham-datapack-builder
@@ -14,8 +14,8 @@ category=Vector
 icon=icon.png
 experimental=False
 deprecated=False
-tags=G-CHAM,census,e-Stat,population,mesh,250m,FlatGeobuf,Japan,public health,administrative boundaries
-changelog=1.0.1 - Resolves QGIS Plugin Repository Bandit security findings: fixed/whitelisted SQL construction, removed silent try/except/pass cleanup, and added Bandit to CI.
-    1.0.0 - First stable public release. Automates six-table 2020 Census download and integration, G-CHAM preset selection, suppression handling, age-group percentages, N03 administrative boundaries, municipality allocation by mesh center, JGD2011 plane rectangular CRS output, FlatGeobuf export, and automatic styling.
-    0.1.1 - Fixed municipality FlatGeobuf finalization and QGIS loading; added plane rectangular CRS output and automatic styles.
-    0.1.0 - Initial development build.
+tags=G-CHAM,census,e-Stat,population mesh,FlatGeobuf,Japan,public health,facilities,transport,disaster,J-SHIS,shelter
+changelog=1.1.1 - Resolves QGIS Plugin Repository Qt6 compatibility findings, fixes static-analysis undefined-name issues, and ensures release packages contain no __pycache__ or compiled Python files.
+    1.1.0 - Adds optional Facility, Transport, Disaster, and Background Map groups; P28/P05/P04/A27/P29 facility layers; P11/N07/N02 transport layers; optional N13 roads with prefecture clipping and Japanese categorical attributes; GSI designated emergency evacuation sites and shelters; J-SHIS 2024 probabilistic seismic-hazard display; OSM/GSI basemaps; default-hidden supplemental labels; and improved download/cache handling. Roads are separately selectable and off by default because of large downloads.
+    1.0.1 - Resolves QGIS Plugin Repository Bandit security findings and adds Bandit to CI.
+    1.0.0 - First stable public release with six-table 2020 Census integration, suppression handling, age-group percentages, N03 administrative boundaries, municipality allocation, projected FlatGeobuf output, and automatic styling.

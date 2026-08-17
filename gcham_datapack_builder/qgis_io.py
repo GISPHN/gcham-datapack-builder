@@ -5,19 +5,17 @@ from __future__ import annotations
 
 import gc
 import os
-import shutil
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
-from qgis.PyQt.QtCore import QCoreApplication, QMetaType, QUrl, Qt
+from qgis.PyQt.QtCore import QMetaType, QUrl, Qt
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import (
     Qgis,
     QgsBlockingNetworkRequest,
-    QgsClassificationJenks,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsFeature,
@@ -364,7 +362,7 @@ def write_admin_fgb(
     feat.setGeometry(transform_geometry(muni.geometry, transformer))
     attrs = [muni.attributes.get(field.name()) for field in source_fields]
     feat.setAttributes(attrs)
-    if not writer.addFeature(feat, QgsFeatureSink.FastInsert):
+    if not writer.addFeature(feat, _enum_member(QgsFeatureSink, "Flag", "FastInsert")):
         msg = writer.errorMessage()
         del writer
         gc.collect()

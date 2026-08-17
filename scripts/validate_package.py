@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import configparser
 import io
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import zipfile
 
@@ -28,6 +28,9 @@ def main() -> None:
             raise SystemExit(f"Unexpected top-level entries: {sorted(tops)}")
         if not ASCII_FOLDER.fullmatch(PLUGIN_DIR):
             raise SystemExit("Invalid plugin directory name")
+        forbidden = [n for n in names if "__pycache__" in PurePosixPath(n).parts or n.endswith((".pyc", ".pyo"))]
+        if forbidden:
+            raise SystemExit(f"Forbidden compiled Python files: {forbidden}")
         rels = {n.split("/", 1)[1] for n in names}
         missing = REQUIRED - rels
         if missing:
@@ -46,8 +49,8 @@ def main() -> None:
             raise SystemExit(f"Missing/empty metadata: {empty}")
         if general.get("experimental", "").strip().lower() != "false":
             raise SystemExit("Stable package must set experimental=False")
-        if general.get("version") != "1.0.1":
-            raise SystemExit("Unexpected version")
+        if general.get("version") != "1.1.1":
+            raise SystemExit(f"Unexpected version: {general.get('version')}")
     print("Package validation passed")
 
 

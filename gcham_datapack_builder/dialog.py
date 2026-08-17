@@ -9,7 +9,6 @@ from pathlib import Path
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
     QAbstractItemView,
-    QButtonGroup,
     QCheckBox,
     QComboBox,
     QDialog,
@@ -39,45 +38,42 @@ from .processor import BuildOptions, DataPackProcessor
 from .qgis_io import CancelledError
 
 
+def _qt_enum_member(nested_name: str, member_name: str):
+    """Return a scoped Qt enum member, with a dynamic Qt5 fallback."""
+    nested = getattr(Qt, nested_name, None)
+    if nested is not None and hasattr(nested, member_name):
+        return getattr(nested, member_name)
+    return getattr(Qt, member_name)
+
+
 def _checked():
-    try:
-        return Qt.CheckState.Checked
-    except AttributeError:
-        return Qt.Checked
+    return _qt_enum_member("CheckState", "Checked")
 
 
 def _unchecked():
-    try:
-        return Qt.CheckState.Unchecked
-    except AttributeError:
-        return Qt.Unchecked
+    return _qt_enum_member("CheckState", "Unchecked")
 
 
 def _item_user_checkable():
-    try:
-        return Qt.ItemFlag.ItemIsUserCheckable
-    except AttributeError:
-        return Qt.ItemIsUserCheckable
+    return _qt_enum_member("ItemFlag", "ItemIsUserCheckable")
 
 
 def _item_enabled():
-    try:
-        return Qt.ItemFlag.ItemIsEnabled
-    except AttributeError:
-        return Qt.ItemIsEnabled
+    return _qt_enum_member("ItemFlag", "ItemIsEnabled")
 
 
 def _dialog_exec(dialog):
-    if hasattr(dialog, "exec"):
-        return dialog.exec()
-    return dialog.exec_()
+    method = getattr(dialog, "exec", None)
+    if method is None:
+        method = getattr(dialog, "exec_")
+    return method()
 
 
 def _accepted_value():
-    try:
-        return QDialog.DialogCode.Accepted
-    except AttributeError:
-        return QDialog.Accepted
+    enum = getattr(QDialog, "DialogCode", None)
+    if enum is not None and hasattr(enum, "Accepted"):
+        return getattr(enum, "Accepted")
+    return getattr(QDialog, "Accepted")
 
 
 def _button_role(name: str):
@@ -350,6 +346,34 @@ class GCHAMDataPackDialog(QDialog):
         self._update_extra_summary()
         layout.addWidget(data_group)
 
+        supplemental_group = QGroupBox("追加レイヤ")
+        supplemental_layout = QVBoxLayout(supplemental_group)
+
+        top_row = QHBoxLayout()
+        self.facilities_check = QCheckBox("施設")
+        self.transport_check = QCheckBox("交通")
+        self.disaster_check = QCheckBox("災害")
+        self.background_check = QCheckBox("背景地図")
+        for checkbox in (self.facilities_check, self.transport_check, self.disaster_check, self.background_check):
+            checkbox.setChecked(True)
+            top_row.addWidget(checkbox)
+        top_row.addStretch(1)
+        supplemental_layout.addLayout(top_row)
+
+        road_row = QHBoxLayout()
+        road_row.addSpacing(24)
+        self.roads_check = QCheckBox("道路（交通とは別選択・容量大）")
+        self.roads_check.setChecked(False)
+        self.roads_check.setToolTip("道路データは容量が大きいため、交通とは別に選択できます。初期状態ではオフです。")
+        road_row.addWidget(self.roads_check)
+        road_row.addStretch(1)
+        supplemental_layout.addLayout(road_row)
+
+        note = QLabel("※ 道路データは容量が大きいため、交通グループとは別に選択してください。初期状態ではオフです。")
+        note.setWordWrap(True)
+        supplemental_layout.addWidget(note)
+        layout.addWidget(supplemental_group)
+
         output_group = QGroupBox("出力")
         output_form = QFormLayout(output_group)
         output_row = QHBoxLayout()
@@ -358,7 +382,7 @@ class GCHAMDataPackDialog(QDialog):
         output_row.addWidget(self.output_edit, 1)
         output_row.addWidget(self.output_button)
         output_form.addRow("出力フォルダ", output_row)
-        self.reuse_check = QCheckBox("ダウンロード済みのe-Stat / N03データを再利用する")
+        self.reuse_check = QCheckBox("ダウンロード済みデータを再利用する")
         self.reuse_check.setChecked(True)
         output_form.addRow("", self.reuse_check)
         layout.addWidget(output_group)
@@ -522,7 +546,8 @@ class GCHAMDataPackDialog(QDialog):
         for w in (
             self.pref_combo, self.radio_all, self.radio_selected, self.preset_check,
             self.extra_button, self.reset_extra_button, self.output_edit, self.output_button,
-            self.reuse_check, self.create_button, self.close_button,
+            self.reuse_check, self.facilities_check, self.transport_check,
+            self.disaster_check, self.background_check, self.create_button, self.close_button,
         ):
             w.setEnabled(not running)
         self.muni_button.setEnabled(not running and self.radio_selected.isChecked())
@@ -536,7 +561,7 @@ class GCHAMDataPackDialog(QDialog):
         msg.setInformativeText("既存ファイルの処理方法を選択してください。")
         overwrite = msg.addButton("すべて上書き", _button_role("AcceptRole"))
         skip = msg.addButton("既存ファイルをスキップ", _button_role("DestructiveRole"))
-        cancel = msg.addButton("キャンセル", _button_role("RejectRole"))
+        msg.addButton("キャンセル", _button_role("RejectRole"))
         _dialog_exec(msg)
         clicked = msg.clickedButton()
         if clicked == overwrite:
@@ -564,6 +589,11 @@ class GCHAMDataPackDialog(QDialog):
             use_preset=self.preset_check.isChecked(),
             additional_codes=set(self.additional_codes),
             reuse_downloads=self.reuse_check.isChecked(),
+            include_facilities=self.facilities_check.isChecked(),
+            include_transport=self.transport_check.isChecked(),
+            include_roads=self.roads_check.isChecked(),
+            include_disaster=self.disaster_check.isChecked(),
+            include_background=self.background_check.isChecked(),
         )
         self._cancelled = False
         self.log_box.clear()

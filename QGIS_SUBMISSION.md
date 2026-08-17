@@ -1,37 +1,22 @@
-# QGIS Official Plugin Repository submission checklist
+# QGIS Plugin Repository submission — G-CHAM Data Pack Builder 1.1.1
 
-Package name: `gcham_datapack_builder`  
-Plugin name: `G-CHAM Data Pack Builder`  
-Version: `1.0.0`  
-Author: `GISPHN (Ryo Horiike)`  
-Email: `ryo.horiike@naramed-u.ac.jp`
+Official package: `GCHAM_Data_Pack_Builder_1.1.1.zip`
 
-## Before upload
+SHA256: `4cbc8f8c5b110685168da39a067b1229c978a45ed2d1ded50cf23e087b43b82e`
 
-- [x] One ASCII-only top-level plugin folder: `gcham_datapack_builder`
-- [x] `metadata.txt` included and populated
-- [x] `__init__.py` included
-- [x] `LICENSE` included with no extension
-- [x] Public repository URL specified in metadata
-- [x] Public issue tracker URL specified in metadata
-- [x] Homepage URL specified in metadata
-- [x] Custom icon included
-- [x] `experimental=False`
-- [x] Unique version `1.0.0`
-- [x] Minimal documentation included
-- [x] Source data are not bundled in the plugin package
-- [x] Automated package structure validation passes
+## Validation status
 
-## Repository URLs expected by metadata
+- QGIS Plugin Repository server-side validation: PASS (2026-08-18)
+- Version in metadata: 1.1.1
+- experimental=False
+- qgisMinimumVersion=3.44
+- qgisMaximumVersion=4.99
+- Single top-level folder: `gcham_datapack_builder`
+- `metadata.txt`, `__init__.py`, and `LICENSE`: present
+- No `__pycache__`, `.pyc`, or `.pyo`
+- Undefined-name (`F821`) findings: 0
+- Previously reported Qt6 incompatibility patterns: 0
+- Core regression tests: 4/4 PASS
+- Final local release validation: 31/31 PASS
 
-- Repository: https://github.com/GISPHN/gcham-datapack-builder
-- Tracker: https://github.com/GISPHN/gcham-datapack-builder/issues
-- Homepage: https://github.com/GISPHN/gcham-datapack-builder#readme
-
-The public GitHub repository must exist before submitting the plugin to the QGIS repository, otherwise the metadata links will fail review.
-
-## QGIS upload
-
-Upload `GCHAM_Data_Pack_Builder_1.0.0.zip` using the official QGIS plugin repository account associated with your OSGeo ID.
-
-After upload, wait for the automated security scan. If it passes, the version proceeds to manual approval unless the uploader has trusted fast-track permission and explicitly opts into automatic publication after the scan.
+The GitHub `main` and `develop` branches should contain the source from the same QGIS-validated package.

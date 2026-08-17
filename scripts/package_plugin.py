@@ -6,7 +6,7 @@ from pathlib import Path
 import zipfile
 
 PLUGIN_DIR = "gcham_datapack_builder"
-ROOT_DOCS = ("LICENSE", "README.md", "CHANGELOG.md", "DATA_SOURCES.md")
+FORBIDDEN_SUFFIXES = {".pyc", ".pyo"}
 
 
 def main() -> None:
@@ -20,12 +20,12 @@ def main() -> None:
 
     with zipfile.ZipFile(args.output, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(package.rglob("*")):
-            if not path.is_file() or "__pycache__" in path.parts:
+            if not path.is_file():
+                continue
+            if "__pycache__" in path.parts or path.suffix.lower() in FORBIDDEN_SUFFIXES:
                 continue
             rel = path.relative_to(package).as_posix()
             zf.write(path, f"{PLUGIN_DIR}/{rel}")
-        for name in ROOT_DOCS:
-            zf.write(root / name, f"{PLUGIN_DIR}/{name}")
     print(args.output)
 
 

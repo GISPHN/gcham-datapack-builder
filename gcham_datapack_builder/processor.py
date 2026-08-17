@@ -8,14 +8,13 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable
 
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import QgsFeature, QgsFeatureSink, QgsFields, QgsField
 
 from .constants import (
     BASE_STATS_ID,
-    COMMON_FIELDS,
     DERIVED_SPECS,
     ESTAT_URL,
     N03_URL,
@@ -38,6 +37,10 @@ from .core_logic import (
     safe_ratio,
     split_gassan,
 )
+from .supplemental import (
+    SupplementalBuilder, add_background_group, add_jshis_wms_fallback,
+    move_root_group_after,
+)
 from .qgis_io import (
     CancelledError,
     Municipality,
@@ -59,6 +62,16 @@ from .qgis_io import (
     valid_zip,
     write_admin_fgb,
 )
+
+
+
+
+def _enum_member(owner, nested_name: str, member_name: str):
+    """Return scoped enum member on QGIS 4 and dynamic flat alias on QGIS 3."""
+    nested = getattr(owner, nested_name, None)
+    if nested is not None and hasattr(nested, member_name):
+        return getattr(nested, member_name)
+    return getattr(owner, member_name)
 
 
 _SUPPRESSION_VALIDATION_SQL = {
@@ -120,8 +133,6 @@ _SUPPRESSION_VALIDATION_SQL = {
 }
 
 _BASE_COUNT_SQL = "SELECT COUNT(*) FROM s_T001142"
-
-
 @dataclass
 class BuildOptions:
     pref_code: str
@@ -132,6 +143,11 @@ class BuildOptions:
     use_preset: bool
     additional_codes: set[str]
     reuse_downloads: bool = True
+    include_facilities: bool = True
+    include_transport: bool = True
+    include_roads: bool = False
+    include_disaster: bool = True
+    include_background: bool = True
 
 
 class DataPackProcessor:
@@ -457,7 +473,7 @@ class DataPackProcessor:
             db_path = Path(td) / "join.sqlite"
             self.progress(32, "e-Stat 6表を読み込んでいます")
             conn, type_map, selected_by_table = self._load_sqlite(archives, selected, db_path)
-            fields, labels = self._build_population_fields(selected, type_map, options.use_preset)
+            fields, _labels = self._build_population_fields(selected, type_map, options.use_preset)
             index = MunicipalityIndex(municipalities)
 
             writers = {}
@@ -535,7 +551,7 @@ class DataPackProcessor:
                     feat.setAttributes(attrs)
 
                     if pref_writer is not None:
-                        if not pref_writer.addFeature(feat, QgsFeatureSink.FastInsert):
+                        if not pref_writer.addFeature(feat, _enum_member(QgsFeatureSink, "Flag", "FastInsert")):
                             raise RuntimeError(f"都道府県250m人口FGBへの書き込みに失敗: {key}")
 
                     muni = index.assign(key)
@@ -552,7 +568,7 @@ class DataPackProcessor:
                                 cross_muni += 1
                         muni_writer = writers.get(muni.code)
                         if muni_writer is not None:
-                            if not muni_writer.addFeature(feat, QgsFeatureSink.FastInsert):
+                            if not muni_writer.addFeature(feat, _enum_member(QgsFeatureSink, "Flag", "FastInsert")):
                                 raise RuntimeError(
                                     f"自治体250m人口FGBへの書き込みに失敗: {muni.code} / {key}"
                                 )
@@ -579,8 +595,27 @@ class DataPackProcessor:
                     "合算先KEY_CODEの中心点が属する自治体へ割り当てました。"
                 )
 
-        self.progress(93, "QGISへレイヤを追加しています")
-        # Administrative layers: N03_007 ascending.
+        self.progress(78, "追加レイヤを作成しています")
+        supplemental = SupplementalBuilder(
+            out, options.pref_code, options.pref_name, target_epsg, municipalities,
+            reuse=options.reuse_downloads, log=self.log, is_cancelled=self.is_cancelled_cb,
+        )
+        supplemental_results = []
+        if options.include_facilities:
+            self.progress(80, "施設データを作成しています")
+            supplemental_results.extend(supplemental.safe_build("build_facilities"))
+        if options.include_transport:
+            self.progress(84, "交通データを作成しています")
+            supplemental_results.extend(supplemental.safe_build("build_transport"))
+        if options.include_roads:
+            self.progress(87, "道路データを作成しています")
+            supplemental_results.extend(supplemental.safe_build("build_roads"))
+        if options.include_disaster:
+            self.progress(90, "災害データを作成しています")
+            supplemental_results.extend(supplemental.safe_build("build_disaster"))
+
+        self.progress(95, "QGISへレイヤを追加しています")
+        # Administrative layers stay at the top.
         for idx, code in enumerate(target_codes):
             muni = muni_by_code[code]
             add_layer_to_group(
@@ -588,7 +623,22 @@ class DataPackProcessor:
                 style_kind="admin",
             )
 
-        # Prefecture layer at top, municipalities below in N03_007 order.
+        # Add facility/transport/disaster groups before population so that the
+        # population group is positioned immediately below the disaster group.
+        supplemental.add_results(supplemental_results)
+        if options.include_disaster and not any(r.style == "jshis" for r in supplemental_results):
+            fallback = add_jshis_wms_fallback(supplemental.pref_geometry)
+            self.log(
+                "J-SHISはFGBを生成できなかったためWMS代替を使用しました。"
+                "不透明度70%。表示は選択都道府県のN03行政区域に制限します。"
+            )
+            if fallback.customProperty("gcham/jshis_canvas_clip_applied", False):
+                self.log("J-SHIS WMS: 都道府県N03による描画クリップを適用しました。")
+            else:
+                detail = fallback.customProperty("gcham/jshis_canvas_clip_error", "unknown")
+                self.log(f"J-SHIS WMS描画クリップ警告: {detail}")
+
+        # Prefecture population at top, municipalities below in N03_007 order.
         add_layer_to_group(
             pref_pop, f"{options.pref_name}_250mメッシュ人口_2020国調", "250mメッシュ人口", 0,
             style_kind="population",
@@ -600,10 +650,19 @@ class DataPackProcessor:
                 "250mメッシュ人口", idx, style_kind="population",
             )
 
+        if options.include_background:
+            add_background_group()
+
+        # Enforce the requested top-level order even when groups already existed
+        # in the current project from a previous plugin run.
+        if options.include_disaster:
+            move_root_group_after("250mメッシュ人口", "災害")
+
         self.progress(100, "G-CHAMデータパックの作成が完了しました")
         return {
             "pref_population": pref_pop,
             "admin_paths": admin_paths,
             "population_paths": muni_pop_paths,
             "municipalities": [muni_by_code[c] for c in target_codes],
+            "supplemental": supplemental_results,
         }
