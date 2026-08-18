@@ -33,5 +33,11 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Build and validate plugin ZIP
         run: |
-          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.1.1.zip
-          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.1.1.zip
+          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.1.2_test.zip
+          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.1.2_test.zip
+      - name: Upload test plugin ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: GCHAM_Data_Pack_Builder_1.1.2_test
+          path: dist/GCHAM_Data_Pack_Builder_1.1.2_test.zip
+          if-no-files-found: error
