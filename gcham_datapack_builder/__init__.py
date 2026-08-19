@@ -5,9 +5,11 @@
 def classFactory(iface):
     from .v112_patches import apply_patches
     from .v112_followup import apply_followup_patches
+    from .v112_cityfix import apply_cityfix
 
     apply_patches()
     apply_followup_patches()
+    apply_cityfix()
     from .plugin import GCHAMDataPackBuilderPlugin
 
     return GCHAMDataPackBuilderPlugin(iface)
