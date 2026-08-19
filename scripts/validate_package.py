@@ -62,7 +62,7 @@ def main() -> None:
             raise SystemExit(f"Missing/empty metadata: {empty}")
         if general.get("experimental", "").strip().lower() != "false":
             raise SystemExit("Stable package must set experimental=False")
-        if general.get("version") != "1.1.2":
+        if general.get("version") != "1.1.3":
             raise SystemExit(f"Unexpected version: {general.get('version')}")
     print("Package validation passed")
 
