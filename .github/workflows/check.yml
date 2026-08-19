@@ -45,17 +45,17 @@ jobs:
               ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
           print('Python AST parse passed')
           PY
-      - name: Run core and UI contract tests
+      - name: Run core and workflow contract tests
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python -m unittest discover -s tests -v
       - name: Build and validate plugin ZIP
         run: |
-          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.1.3_test6.zip
-          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.1.3_test6.zip
+          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.1.3_test7.zip
+          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.1.3_test7.zip
       - name: Upload plugin ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: GCHAM_Data_Pack_Builder_1.1.3_test6
-          path: dist/GCHAM_Data_Pack_Builder_1.1.3_test6.zip
+          name: GCHAM_Data_Pack_Builder_1.1.3_test7
+          path: dist/GCHAM_Data_Pack_Builder_1.1.3_test7.zip
           if-no-files-found: error
