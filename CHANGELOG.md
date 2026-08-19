@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.1.3 - 2026-08-19
+
+### Added
+- Unified dataset selection for population, facilities, transport, roads, disaster, and basemaps in a single workflow.
+- `G-CHAMデータパックのデータ` preset that selects the standard data-pack contents while leaving large N13 road data off by default.
+- `特定のデータを追加` workflow that clears all selections so users can choose only the required datasets.
+- Per-layer selection inside facility, transport, disaster, and basemap groups.
+- Population data can now be selected and added independently from the other data groups.
+- Municipality-scoped incremental output for selected municipalities, including municipality-coded FlatGeobuf filenames to avoid overwriting prefecture-wide outputs.
+- Selection-time temporary caching for N03/e-Stat metadata so municipality/data selection does not require choosing an output folder first.
+
+### Changed
+- The plugin now determines the processing path automatically from the selected datasets instead of requiring a separate “supplemental layers only” mode.
+- N13 road processing now uses bounding-box filtering, prepared geometry checks, reduced clipping work, progress logging, cancellation checks, and GUI event updates for improved performance.
+- The dialog is vertically resizable, keeps the action buttons visible on smaller displays, and provides a larger but flexible processing log area.
+- Supplemental selection defaults to the standard G-CHAM data-pack contents; a one-click clear-all control is available for selective additions.
+
+### Fixed
+- `自治体を選択...` and `追加データを選択...` no longer open the output-folder chooser.
+- Selected municipality scope is respected when adding data to an existing data pack.
+- Municipality selections, output-folder text, and dataset selections remain available after completion, cancellation, or errors.
+- Internal control results are excluded from municipality filename conversion.
+
+## 1.1.2 - 2026-08-19
+
+### Fixed
+- Optimized nationwide N02 railway filtering to avoid long stalls in prefectures such as Shizuoka and Ehime.
+- Added a dissolved prefecture boundary layer with a black outline.
+- Added dissolved ordinance-designated city boundary layers while retaining individual ward boundaries.
+- Fixed Japanese mojibake in P04 medical-facility attributes and labels by preferring GML input and using an explicit CP932 fallback for Shapefiles.
+- Added wall-clock elapsed-time display in `mm:ss` and improved GUI responsiveness during long synchronous processing steps.
+
 ## 1.1.1 - 2026-08-18
 
 ### Fixed
