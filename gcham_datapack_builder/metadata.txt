@@ -4,7 +4,7 @@ qgisMinimumVersion=3.44
 qgisMaximumVersion=4.99
 description=Builds Japanese G-CHAM data packs from Census, administrative, facility, transport, disaster, and basemap sources.
 about=G-CHAM Data Pack Builder automates the creation of GIS-based Community Health Assessment Methods (G-CHAM) data packs for Japan. It downloads and integrates six 2020 Population Census 250 m mesh tables, 2026 N03 administrative boundaries, facility and transport datasets from National Land Numerical Information, GSI designated evacuation-site/shelter data, and J-SHIS probabilistic seismic-hazard information, and can add OpenStreetMap/GSI basemaps. Generated vector data are written as FlatGeobuf in the selected prefecture's JGD2011 Japan Plane Rectangular Coordinate System. The plugin handles Census suppression/aggregation, municipality allocation, derived age-group percentages, styling, labels, caching, and layer grouping. Road data are optional and disabled by default because downloads can be large. Spatial coverage is Japan. Internet access is required for source downloads and online map services. No external Python packages, API keys, user accounts, or personal information are required.
-version=1.1.1
+version=1.1.2
 author=GISPHN (Ryo Horiike)
 email=ryo.horiike@naramed-u.ac.jp
 repository=https://github.com/GISPHN/gcham-datapack-builder
@@ -15,7 +15,8 @@ icon=icon.png
 experimental=False
 deprecated=False
 tags=G-CHAM,census,e-Stat,population mesh,FlatGeobuf,Japan,public health,facilities,transport,disaster,J-SHIS,shelter
-changelog=1.1.1 - Resolves QGIS Plugin Repository Qt6 compatibility findings, fixes static-analysis undefined-name issues, and ensures release packages contain no __pycache__ or compiled Python files.
+changelog=1.1.2 - Optimizes N02 nationwide railway filtering; adds dissolved prefecture and ordinance-designated city boundaries; avoids P04 Japanese text mojibake by preferring GML or explicit CP932 fallback; and displays wall-clock elapsed processing time in mm:ss with a responsive GUI heartbeat.
+    1.1.1 - Resolves QGIS Plugin Repository Qt6 compatibility findings, fixes static-analysis undefined-name issues, and ensures release packages contain no __pycache__ or compiled Python files.
     1.1.0 - Adds optional Facility, Transport, Disaster, and Background Map groups; P28/P05/P04/A27/P29 facility layers; P11/N07/N02 transport layers; optional N13 roads with prefecture clipping and Japanese categorical attributes; GSI designated emergency evacuation sites and shelters; J-SHIS 2024 probabilistic seismic-hazard display; OSM/GSI basemaps; default-hidden supplemental labels; and improved download/cache handling. Roads are separately selectable and off by default because of large downloads.
     1.0.1 - Resolves QGIS Plugin Repository Bandit security findings and adds Bandit to CI.
     1.0.0 - First stable public release with six-table 2020 Census integration, suppression handling, age-group percentages, N03 administrative boundaries, municipality allocation, projected FlatGeobuf output, and automatic styling.

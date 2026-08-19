@@ -28,7 +28,12 @@ def main() -> None:
             raise SystemExit(f"Unexpected top-level entries: {sorted(tops)}")
         if not ASCII_FOLDER.fullmatch(PLUGIN_DIR):
             raise SystemExit("Invalid plugin directory name")
-        forbidden = [n for n in names if "__pycache__" in PurePosixPath(n).parts or n.endswith((".pyc", ".pyo"))]
+        forbidden = [
+            n
+            for n in names
+            if "__pycache__" in PurePosixPath(n).parts
+            or n.endswith((".pyc", ".pyo"))
+        ]
         if forbidden:
             raise SystemExit(f"Forbidden compiled Python files: {forbidden}")
         rels = {n.split("/", 1)[1] for n in names}
@@ -41,15 +46,23 @@ def main() -> None:
         cp.read_file(io.StringIO(metadata))
         general = cp["general"]
         required_fields = [
-            "name", "qgisMinimumVersion", "description", "about", "version",
-            "author", "email", "repository", "tracker", "homepage",
+            "name",
+            "qgisMinimumVersion",
+            "description",
+            "about",
+            "version",
+            "author",
+            "email",
+            "repository",
+            "tracker",
+            "homepage",
         ]
         empty = [key for key in required_fields if not general.get(key, "").strip()]
         if empty:
             raise SystemExit(f"Missing/empty metadata: {empty}")
         if general.get("experimental", "").strip().lower() != "false":
             raise SystemExit("Stable package must set experimental=False")
-        if general.get("version") != "1.1.1":
+        if general.get("version") != "1.1.2":
             raise SystemExit(f"Unexpected version: {general.get('version')}")
     print("Package validation passed")
 
