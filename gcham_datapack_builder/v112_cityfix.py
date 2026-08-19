@@ -7,11 +7,10 @@ from qgis.core import QgsGeometry
 
 from . import v112_followup
 
-# Official parent municipality codes for Japan's ordinance-designated cities.
-# N03 ward records identify the parent by N03_003 (郡・政令都市名), while
-# N03_004 contains the ward name. Keeping the parent code explicit avoids
-# incorrect prefix inference (e.g. Shizuoka City and Hamamatsu City both use
-# ward codes beginning with 221xx).
+# Parent municipality codes for Japan's ordinance-designated cities.
+# The code is mapped from the parent city name instead of inferred from ward
+# codes. Prefix inference is unsafe in Shizuoka Prefecture because Shizuoka
+# City and Hamamatsu City ward codes both begin with 221.
 _DESIGNATED_CITY_CODES = {
     "札幌市": "01100",
     "仙台市": "04100",
@@ -39,28 +38,36 @@ _DESIGNATED_CITY_CODES = {
 def _designated_city_groups_fixed(municipalities):
     """Group N03 ward polygons by their ordinance-designated parent city.
 
-    N03 hierarchy:
-      N03_003 = 郡・政令都市名 (parent designated city for ward records)
-      N03_004 = 市区町村名 (ward name for designated-city ward records)
+    Current N03 schema (2024+):
+      N03_004 = 市区町村名 (parent ordinance-designated city)
+      N03_005 = 政令指定都市の行政区名 (ward)
 
-    The previous test implementation incorrectly expected N03_004/N03_005
-    and inferred parent codes from the first three digits of ward codes.
+    Older N03 products used N03_003 as 郡・政令都市名 and N03_004 as the
+    child municipality/ward. A fallback for that schema is retained so cached
+    older N03 data do not break the plugin.
     """
     grouped: dict[str, dict] = {}
+
     for municipality in municipalities:
         attrs = municipality.attributes
-        city_name = str(attrs.get("N03_003") or "").strip()
-        ward_name = str(attrs.get("N03_004") or "").strip()
+        n03_003 = str(attrs.get("N03_003") or "").strip()
+        n03_004 = str(attrs.get("N03_004") or "").strip()
+        n03_005 = str(attrs.get("N03_005") or "").strip()
         ward_code = str(municipality.code).strip()
 
-        city_code = _DESIGNATED_CITY_CODES.get(city_name)
-        if city_code is None:
+        # Current products: city in N03_004, ward in N03_005.
+        if n03_005 and n03_004 in _DESIGNATED_CITY_CODES:
+            city_name = n03_004
+            ward_name = n03_005
+        # Backward-compatible fallback for older products.
+        elif n03_003 in _DESIGNATED_CITY_CODES and n03_004:
+            city_name = n03_003
+            ward_name = n03_004
+        else:
             continue
+
+        city_code = _DESIGNATED_CITY_CODES[city_name]
         if not ward_name or len(ward_code) != 5 or not ward_code.isdigit():
-            continue
-        # A designated-city child must be a ward rather than the parent city
-        # itself. N03_003 provides the parent city name, while N03_004 is the ward.
-        if ward_name == city_name:
             continue
 
         entry = grouped.setdefault(
@@ -70,8 +77,6 @@ def _designated_city_groups_fixed(municipalities):
         entry["wards"].append(ward_code)
         entry["geometries"].append(QgsGeometry(municipality.geometry))
 
-    # Require at least two distinct wards so an accidental single record cannot
-    # create a misleading parent-city outline.
     return {
         city_code: entry
         for city_code, entry in grouped.items()
@@ -80,7 +85,5 @@ def _designated_city_groups_fixed(municipalities):
 
 
 def apply_cityfix() -> None:
-    # The build wrapper created in v112_followup resolves this module-global
-    # function at runtime, so replacing it here fixes both all-prefecture runs
-    # and ward-only selected runs without another build wrapper.
+    # v112_followup's build wrapper resolves this function at runtime.
     v112_followup._designated_city_groups = _designated_city_groups_fixed
