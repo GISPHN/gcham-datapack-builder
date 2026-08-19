@@ -7,11 +7,13 @@ def classFactory(iface):
     from .v112_followup import apply_followup_patches
     from .v112_cityfix import apply_cityfix
     from .v113_layer_selection import apply_v113_layer_selection
+    from .v113_roadfix import apply_v113_roadfix
 
     apply_patches()
     apply_followup_patches()
     apply_cityfix()
     apply_v113_layer_selection()
+    apply_v113_roadfix()
     from .plugin import GCHAMDataPackBuilderPlugin
 
     return GCHAMDataPackBuilderPlugin(iface)
