@@ -9,6 +9,7 @@ def classFactory(iface):
     from .v113_layer_selection import apply_v113_layer_selection
     from .v113_roadfix import apply_v113_roadfix
     from .v113_defaults_ui import apply_v113_defaults_ui
+    from .v113_resizable_ui import apply_v113_resizable_ui
 
     apply_patches()
     apply_followup_patches()
@@ -16,6 +17,7 @@ def classFactory(iface):
     apply_v113_layer_selection()
     apply_v113_roadfix()
     apply_v113_defaults_ui()
+    apply_v113_resizable_ui()
     from .plugin import GCHAMDataPackBuilderPlugin
 
     return GCHAMDataPackBuilderPlugin(iface)
