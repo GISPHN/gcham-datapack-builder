@@ -11,6 +11,8 @@ def classFactory(iface):
     from .v113_defaults_ui import apply_v113_defaults_ui
     from .v113_resizable_ui import apply_v113_resizable_ui
     from .v113_municipality_scope import apply_v113_municipality_scope
+    from .v113_preflight_ui import apply_v113_preflight_ui
+    from .v113_safety import apply_v113_safety
 
     apply_patches()
     apply_followup_patches()
@@ -20,6 +22,8 @@ def classFactory(iface):
     apply_v113_defaults_ui()
     apply_v113_resizable_ui()
     apply_v113_municipality_scope()
+    apply_v113_preflight_ui()
+    apply_v113_safety()
     from .plugin import GCHAMDataPackBuilderPlugin
 
     return GCHAMDataPackBuilderPlugin(iface)
