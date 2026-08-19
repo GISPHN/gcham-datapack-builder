@@ -14,6 +14,7 @@ from . import qgis_io
 from . import supplemental
 from . import v112_patches
 from . import v113_layer_selection
+from .constants import plane_rectangular_epsg
 
 _APPLIED = False
 _ACTIVE_ALL_MUNICIPALITIES = True
@@ -168,11 +169,116 @@ def _write_p04_scoped(
     return out_path
 
 
-def _patch_supplemental_only_scope() -> None:
-    original_build = v113_layer_selection._build_supplemental_only
-    original_loader = qgis_io.load_and_dissolve_n03
+def _municipality_result_path(path: Path, pref_code: str, muni_code: str) -> Path:
+    """Return a municipality-coded filename without changing source download keys."""
+    name = path.name
+    middle = f"_{pref_code}_"
+    if middle in name:
+        name = name.replace(middle, f"_{muni_code}_", 1)
+    elif name.endswith(f"_{pref_code}.fgb"):
+        name = name[: -len(f"_{pref_code}.fgb")] + f"_{muni_code}.fgb"
+    else:
+        name = f"{path.stem}_{muni_code}{path.suffix}"
+    return path.with_name(name)
+
+
+def _rename_result_for_municipality(result, pref_code: str, municipality):
+    source = Path(result.path)
+    target = _municipality_result_path(source, pref_code, municipality.code)
+    if source.exists() and source != target:
+        qgis_io.remove_existing_layer_for_path(target)
+        target.unlink(missing_ok=True)
+        source.replace(target)
+    return supplemental.SupplementalResult(
+        target,
+        f"{municipality.name}_{result.display_name}",
+        result.group,
+        result.style,
+    )
+
+
+def _run_builder_for_scope(processor, builder, scope_geometry, pref_code, municipality):
+    """Run selected supplemental builders for one municipality and rename outputs safely."""
     original_write = supplemental._write_merged_vectors
     original_p04 = v112_patches._write_p04_vectors
+
+    def scoped_write(
+        sources,
+        out_path,
+        target_epsg,
+        pref_geometry=None,
+        extra_maps=None,
+        clip_to_pref=False,
+    ):
+        if pref_geometry is None:
+            pref_geometry = scope_geometry
+            first = QgsVectorLayer(str(sources[0]), "scope_type", "ogr")
+            if first.isValid():
+                geometry_type = QgsWkbTypes.geometryType(first.wkbType())
+                clip_to_pref = geometry_type != _point_geometry_type()
+        return original_write(
+            sources,
+            out_path,
+            target_epsg,
+            pref_geometry,
+            extra_maps,
+            clip_to_pref,
+        )
+
+    def scoped_p04(
+        sources,
+        out_path,
+        target_epsg,
+        log,
+        check_cancelled,
+        encoding=None,
+    ):
+        return _write_p04_scoped(
+            sources,
+            out_path,
+            target_epsg,
+            log,
+            check_cancelled,
+            scope_geometry,
+            encoding,
+        )
+
+    supplemental._write_merged_vectors = scoped_write
+    v112_patches._write_p04_vectors = scoped_p04
+    raw_results = []
+    try:
+        if v113_layer_selection._selection_has(
+            set(v113_layer_selection.FACILITY_KEYS)
+        ):
+            raw_results.extend(builder.safe_build("build_facilities"))
+        if v113_layer_selection._selection_has(
+            v113_layer_selection.TRANSPORT_KEYS
+        ):
+            raw_results.extend(builder.safe_build("build_transport"))
+        if "road_n13" in (v113_layer_selection._CURRENT_SELECTION or set()):
+            raw_results.extend(builder.safe_build("build_roads"))
+        if v113_layer_selection._selection_has(
+            v113_layer_selection.DISASTER_KEYS
+        ):
+            raw_results.extend(builder.safe_build("build_disaster"))
+    finally:
+        supplemental._write_merged_vectors = original_write
+        v112_patches._write_p04_vectors = original_p04
+
+    renamed = [
+        _rename_result_for_municipality(result, pref_code, municipality)
+        for result in raw_results
+    ]
+    builder.add_results(renamed)
+    processor.log(
+        f"追加レイヤ作成完了: {municipality.code} {municipality.name} / "
+        f"{len([r for r in renamed if r.group != v113_layer_selection._INTERNAL_GROUP])}レイヤ"
+    )
+    return renamed
+
+
+def _patch_supplemental_only_scope() -> None:
+    original_build = v113_layer_selection._build_supplemental_only
 
     def build_supplemental_only(
         processor,
@@ -181,94 +287,76 @@ def _patch_supplemental_only_scope() -> None:
         pref_name: str,
         reuse: bool,
     ):
-        scope_holder = {"geometry": None, "municipalities": None}
+        if _ACTIVE_ALL_MUNICIPALITIES:
+            return original_build(processor, output, pref_code, pref_name, reuse)
 
-        def scoped_loader(path):
-            municipalities, fields = original_loader(path)
-            selected = _scope_municipalities(municipalities)
-            scope_holder["municipalities"] = selected
-            scope_holder["geometry"] = _scope_geometry(selected)
-            if _ACTIVE_ALL_MUNICIPALITIES:
-                processor.log(
-                    f"追加レイヤ対象範囲: {pref_name} 全域 ({len(selected)}自治体)"
-                )
-            else:
-                names = ", ".join(
-                    f"{muni.code} {muni.name}" for muni in selected
-                )
-                processor.log(
-                    f"追加レイヤ対象範囲: 選択自治体 {len(selected)}件 / {names}"
-                )
-            return selected, fields
+        processor.progress(2, "行政区域を準備しています")
+        n03_vector = processor.ensure_n03(pref_code, output, reuse)
+        all_municipalities, _fields = qgis_io.load_and_dissolve_n03(n03_vector)
+        municipalities = _scope_municipalities(all_municipalities)
+        target_epsg = plane_rectangular_epsg(pref_code)
+        names = ", ".join(
+            f"{muni.code} {muni.name}" for muni in municipalities
+        )
+        processor.log(
+            f"追加レイヤのみモード / 選択自治体 {len(municipalities)}件 / "
+            f"出力CRS: EPSG:{target_epsg}"
+        )
+        processor.log(f"追加レイヤ対象自治体: {names}")
 
-        def scoped_write(
-            sources,
-            out_path,
-            target_epsg,
-            pref_geometry=None,
-            extra_maps=None,
-            clip_to_pref=False,
-        ):
-            if (
-                not _ACTIVE_ALL_MUNICIPALITIES
-                and pref_geometry is None
-                and scope_holder["geometry"] is not None
-            ):
-                pref_geometry = scope_holder["geometry"]
-                first = QgsVectorLayer(str(sources[0]), "scope_type", "ogr")
-                if first.isValid():
-                    geometry_type = QgsWkbTypes.geometryType(first.wkbType())
-                    clip_to_pref = geometry_type != _point_geometry_type()
-            return original_write(
-                sources,
-                out_path,
+        all_results = []
+        visible_jshis = False
+        for index, municipality in enumerate(municipalities, start=1):
+            processor.check_cancelled()
+            processor.progress(
+                min(90, 5 + int(80 * (index - 1) / max(1, len(municipalities)))),
+                f"追加レイヤ作成: {municipality.name} ({index}/{len(municipalities)})",
+            )
+            builder = supplemental.SupplementalBuilder(
+                output,
+                pref_code,
+                pref_name,
                 target_epsg,
-                pref_geometry,
-                extra_maps,
-                clip_to_pref,
+                [municipality],
+                reuse=reuse,
+                log=processor.log,
+                is_cancelled=processor.is_cancelled_cb,
             )
-
-        def scoped_p04(
-            sources,
-            out_path,
-            target_epsg,
-            log,
-            check_cancelled,
-            encoding=None,
-        ):
-            if (
-                _ACTIVE_ALL_MUNICIPALITIES
-                or scope_holder["geometry"] is None
+            scoped_results = _run_builder_for_scope(
+                processor,
+                builder,
+                _scope_geometry([municipality]),
+                pref_code,
+                municipality,
+            )
+            all_results.extend(scoped_results)
+            if any(
+                result.style == "jshis"
+                and result.group != v113_layer_selection._INTERNAL_GROUP
+                for result in scoped_results
             ):
-                return original_p04(
-                    sources,
-                    out_path,
-                    target_epsg,
-                    log,
-                    check_cancelled,
-                    encoding,
-                )
-            return _write_p04_scoped(
-                sources,
-                out_path,
-                target_epsg,
-                log,
-                check_cancelled,
-                scope_holder["geometry"],
-                encoding,
+                visible_jshis = True
+
+        if (
+            "disaster_jshis" in (v113_layer_selection._CURRENT_SELECTION or set())
+            and not visible_jshis
+        ):
+            combined_scope = _scope_geometry(municipalities)
+            supplemental.add_jshis_wms_fallback(combined_scope)
+            processor.log(
+                "J-SHISはFGBを生成できなかったため、選択自治体範囲を結合したWMS代替を使用しました。"
             )
 
-        qgis_io.load_and_dissolve_n03 = scoped_loader
-        supplemental._write_merged_vectors = scoped_write
-        v112_patches._write_p04_vectors = scoped_p04
-        try:
-            return original_build(
-                processor, output, pref_code, pref_name, reuse
-            )
-        finally:
-            qgis_io.load_and_dissolve_n03 = original_loader
-            supplemental._write_merged_vectors = original_write
-            v112_patches._write_p04_vectors = original_p04
+        if v113_layer_selection._selection_has(
+            v113_layer_selection.BACKGROUND_KEYS
+        ):
+            v113_layer_selection._add_selected_background_group()
+
+        processor.progress(100, "選択した追加レイヤの作成が完了しました")
+        return [
+            result for result in all_results
+            if result.group != v113_layer_selection._INTERNAL_GROUP
+        ]
 
     v113_layer_selection._build_supplemental_only = build_supplemental_only
 
@@ -296,6 +384,9 @@ def _patch_run_scope() -> None:
         try:
             return original_run(self)
         finally:
+            # Reset only transient processing scope.  The dialog's selected
+            # municipality codes and output folder intentionally remain intact
+            # so the user can add another layer after a successful run.
             _ACTIVE_ALL_MUNICIPALITIES = True
             _ACTIVE_MUNICIPALITY_CODES = set()
 
