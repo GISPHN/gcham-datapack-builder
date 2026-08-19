@@ -17,9 +17,13 @@ _MIGRATION_KEY = f"{SETTINGS_PREFIX}/supplemental_defaults_v113_test3"
 _SELECTION_KEY = f"{SETTINGS_PREFIX}/supplemental_layers"
 
 
+def _truthy(value) -> bool:
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _load_layer_selection(dialog) -> set[str]:
     """Load saved selection, migrating test2's all-off default once to the new default."""
-    migrated = bool(dialog.settings.value(_MIGRATION_KEY, False, type=bool))
+    migrated = _truthy(dialog.settings.value(_MIGRATION_KEY, False))
     if not migrated:
         values = sorted(_DEFAULTS)
         dialog.settings.setValue(
