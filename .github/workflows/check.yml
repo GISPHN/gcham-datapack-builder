@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Apply test patch scanner cleanup
+      - name: Apply scanner cleanup
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -51,11 +51,11 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Build and validate plugin ZIP
         run: |
-          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.1.2_test4.zip
-          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.1.2_test4.zip
-      - name: Upload test plugin ZIP
+          python scripts/package_plugin.py --output dist/GCHAM_Data_Pack_Builder_1.1.2.zip
+          python scripts/validate_package.py dist/GCHAM_Data_Pack_Builder_1.1.2.zip
+      - name: Upload plugin ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: GCHAM_Data_Pack_Builder_1.1.2_test4
-          path: dist/GCHAM_Data_Pack_Builder_1.1.2_test4.zip
+          name: GCHAM_Data_Pack_Builder_1.1.2
+          path: dist/GCHAM_Data_Pack_Builder_1.1.2.zip
           if-no-files-found: error
