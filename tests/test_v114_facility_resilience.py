@@ -27,6 +27,14 @@ class V114FacilityResilienceContracts(unittest.TestCase):
         self.assertIn("continue", source)
         self.assertIn("対象地物が0件でした", source)
 
+    def test_population_group_is_normalized_after_incremental_build(self):
+        source = PATCH.read_text(encoding="utf-8")
+        self.assertIn("def _normalize_population_group_order", source)
+        self.assertIn('move_root_group_after("250mメッシュ人口", "災害")', source)
+        self.assertIn('root.findGroup("背景地図")', source)
+        self.assertIn("_patch_incremental_group_order", source)
+        self.assertIn("_normalize_population_group_order()", source)
+
     def test_patch_parses(self):
         ast.parse(PATCH.read_text(encoding="utf-8"), filename=str(PATCH))
 
