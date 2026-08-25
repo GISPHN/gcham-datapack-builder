@@ -5,32 +5,58 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PATCH = ROOT / "gcham_datapack_builder" / "v114_population_order_fix.py"
+PATCH = ROOT / "gcham_datapack_builder" / "v114_population_group_position.py"
+PROCESSOR = ROOT / "gcham_datapack_builder" / "processor.py"
 
 
-class V114PopulationOrderFixContracts(unittest.TestCase):
-    def test_only_group_position_is_changed(self):
+class V114PopulationGroupPositionContracts(unittest.TestCase):
+    def test_population_processing_is_not_reimplemented(self):
         source = PATCH.read_text(encoding="utf-8")
-        self.assertIn('root.findGroup("250mメッシュ人口")', source)
-        self.assertIn("root.takeChild(population)", source)
-        self.assertIn("root.insertChildNode", source)
-        self.assertNotIn("population.clone()", source)
+        for forbidden in (
+            "BuildOptions",
+            "STAT_TABLES",
+            "iter_estat_rows",
+            "create_fgb_writer",
+            "merged_mesh_geometry",
+            "safe_ratio",
+        ):
+            self.assertNotIn(forbidden, source)
+        self.assertIn("QgsProject.instance()", source)
+
+    def test_existing_project_population_layers_are_reused(self):
+        source = PATCH.read_text(encoding="utf-8")
+        self.assertIn("project.mapLayers().values()", source)
+        self.assertIn("census2020_", source)
+        self.assertIn("_pop250m.fgb", source)
+        self.assertIn("group.addLayer(layer)", source)
+        self.assertNotIn("QgsVectorLayer(", source)
         self.assertNotIn("removeMapLayer", source)
 
-    def test_existing_population_processing_is_not_reimplemented(self):
+    def test_requested_group_position_is_disaster_then_population_then_background(self):
         source = PATCH.read_text(encoding="utf-8")
-        self.assertNotIn("BuildOptions", source)
-        self.assertNotIn("pref_population", source)
-        self.assertNotIn("population_paths", source)
-        self.assertIn("_normalize_population_group_order", source)
+        self.assertIn('root.findGroup("災害")', source)
+        self.assertIn('root.findGroup("背景地図")', source)
+        self.assertIn("root.insertGroup", source)
 
-    def test_patch_runs_after_facility_resilience(self):
+    def test_empty_tree_group_can_self_repair(self):
+        source = PATCH.read_text(encoding="utf-8")
+        self.assertIn("Self-repair", source)
+        self.assertIn("expected_ids.issubset(existing_ids)", source)
+
+    def test_patch_runs_after_v113_and_facility_patch(self):
         source = (ROOT / "gcham_datapack_builder" / "__init__.py").read_text(encoding="utf-8")
-        self.assertIn("apply_v114_population_order_fix", source)
+        self.assertIn("apply_v114_population_group_position", source)
         self.assertLess(
             source.index("apply_v114_facility_resilience()"),
-            source.index("apply_v114_population_order_fix()"),
+            source.index("apply_v114_population_group_position()"),
         )
+
+    def test_established_processor_population_path_remains_present(self):
+        source = PROCESSOR.read_text(encoding="utf-8")
+        self.assertIn('add_layer_to_group(\n            pref_pop', source)
+        self.assertIn('"250mメッシュ人口", 0', source)
+        self.assertIn("muni_pop_paths[code]", source)
+        self.assertIn('"250mメッシュ人口", idx', source)
 
     def test_patch_parses(self):
         ast.parse(PATCH.read_text(encoding="utf-8"), filename=str(PATCH))
