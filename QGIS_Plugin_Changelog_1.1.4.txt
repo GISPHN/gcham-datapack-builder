@@ -1,3 +1,0 @@
-Version 1.1.4
-- Fixed facility processing so other facility layers are still added when school-district data are unavailable or fail to write.
-- Fixed layer ordering so the 250 m population group is displayed between the Disaster and Background Map groups without changing population data processing.
