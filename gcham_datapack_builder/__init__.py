@@ -15,7 +15,7 @@ def classFactory(iface):
     from .v113_safety import apply_v113_safety
     from .v113_unified_workflow import apply_v113_unified_workflow
     from .v114_facility_resilience import apply_v114_facility_resilience
-    from .v114_population_order_fix import apply_v114_population_order_fix
+    from .v114_population_group_position import apply_v114_population_group_position
 
     apply_patches()
     apply_followup_patches()
@@ -29,7 +29,7 @@ def classFactory(iface):
     apply_v113_safety()
     apply_v113_unified_workflow()
     apply_v114_facility_resilience()
-    apply_v114_population_order_fix()
+    apply_v114_population_group_position()
     from .plugin import GCHAMDataPackBuilderPlugin
 
     return GCHAMDataPackBuilderPlugin(iface)
