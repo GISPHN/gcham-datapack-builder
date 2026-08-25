@@ -10,7 +10,6 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsFeature,
     QgsFeatureSink,
-    QgsProject,
     QgsVectorLayer,
     QgsWkbTypes,
 )
@@ -211,53 +210,10 @@ def _patch_facility_independence() -> None:
     supplemental.SupplementalBuilder.build_facilities = build_facilities
 
 
-def _normalize_population_group_order() -> None:
-    """Keep population below disaster and above background maps."""
-    project = QgsProject.instance()
-    root = project.layerTreeRoot()
-    population = root.findGroup("250mメッシュ人口")
-    if population is None or population.parent() is not root:
-        return
-
-    disaster = root.findGroup("災害")
-    if disaster is not None and disaster.parent() is root:
-        supplemental.move_root_group_after("250mメッシュ人口", "災害")
-        return
-
-    background = root.findGroup("背景地図")
-    if background is None or background.parent() is not root:
-        return
-
-    children = root.children()
-    population_index = children.index(population)
-    background_index = children.index(background)
-    if population_index == background_index - 1:
-        return
-    clone = population.clone()
-    root.removeChildNode(population)
-    background_index = root.children().index(background)
-    root.insertChildNode(background_index, clone)
-
-
-def _patch_incremental_group_order() -> None:
-    original = v113_layer_selection._build_supplemental_only
-    if getattr(original, "_gcham_v114_group_order", False):
-        return
-
-    def _build_supplemental_only(*args, **kwargs):
-        results = original(*args, **kwargs)
-        _normalize_population_group_order()
-        return results
-
-    _build_supplemental_only._gcham_v114_group_order = True
-    v113_layer_selection._build_supplemental_only = _build_supplemental_only
-
-
 def apply_v114_facility_resilience() -> None:
     global _APPLIED
     if _APPLIED:
         return
     _patch_vector_writer()
     _patch_facility_independence()
-    _patch_incremental_group_order()
     _APPLIED = True
