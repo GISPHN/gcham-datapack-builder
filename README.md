@@ -27,7 +27,10 @@ The plugin automates the workflow from source download to ready-to-use FlatGeobu
 - Automatically add outputs to the QGIS layer tree with deterministic group ordering.
 - Optionally create facility layers (P28/P05/P04/A27/P29), transport layers (P11/N07/N02), disaster layers, and background maps.
 - Optionally download and process N13 road data; roads are separately selectable and disabled by default because downloads can be large.
+- The N13 workflow skips unpublished mesh archives and creates an additional walking and cycling candidate road layer excluding expressways and toll roads; candidate status does not establish legal access.
+- Create one prefecture-wide municipality boundary layer with municipality labels and hide the individual boundary layers by default.
 - Create GSI designated emergency evacuation-site and designated-shelter layers, with prefecture-filtered GeoJSON fallback when direct CSV discovery is unavailable.
+- If a prefecture CSV cannot be found, try the official nationwide GSI CSV filtered to the prefecture before GeoJSON fallback.
 - Add J-SHIS 2024 probabilistic seismic-hazard information (`T30_P03_SI`); when vector conversion is unavailable, the official WMS is used at 70% opacity.
 - Add OpenStreetMap Standard, GSI seamless aerial imagery, and GSI hillshade as optional background maps.
 - Reuse previously downloaded source archives from the local cache.
@@ -109,7 +112,7 @@ Some prefectures, particularly Hokkaido, Tokyo, Kagoshima, and Okinawa, span mul
 
 ### Official QGIS Plugin Repository
 
-After the plugin has been approved in the official QGIS repository:
+For a version published in the official QGIS repository:
 
 1. Open QGIS.
 2. Choose **Plugins → Manage and Install Plugins**.

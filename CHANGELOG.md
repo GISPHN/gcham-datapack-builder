@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.5 - 2026-10-19
+
+### Added
+- Combined prefecture-wide municipality administrative boundary FlatGeobuf with individual municipality features and labels equivalent to the individual administrative layers.
+- Additional N13 walking and cycling analysis candidate road FlatGeobuf below the original road layer, excluding expressways and tolled roads, without filtering on construction status.
+
+### Fixed
+- Skip N13 first-order meshes not listed in the official 2024 release catalogue; surface actual failures for listed archive downloads.
+- Prefer prefecture-specific GSI shelter CSV and recover with nationwide GSI CSV filtered to the selected prefecture before falling back to GeoJSON tiles.
+- Preserve facility layers when A27 school district data are unavailable; restore population group ordering.
+
+### Notes
+- Walking and cycling candidate road data are not a legally verified network.
+- GSI CSV fallback file date represents retrieval date unless publication date is established.
+
 ## 1.1.3 - 2026-08-19
 
 ### Added

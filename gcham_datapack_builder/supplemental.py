@@ -614,6 +614,18 @@ def style_vector(layer: QgsVectorLayer, kind: str):
     layer.triggerRepaint()
 
 
+def _supplemental_group(root, group_name: str):
+    """Create supplemental groups before population without moving population itself."""
+    group = root.findGroup(group_name)
+    if group is not None:
+        return group
+    if group_name in {"施設", "交通", "災害"}:
+        population = root.findGroup("250mメッシュ人口")
+        if population is not None and population.parent() is root:
+            return root.insertGroup(root.children().index(population), group_name)
+    return root.addGroup(group_name)
+
+
 def add_vector_to_group(path: Path, display_name: str, group_name: str, index: int, style_kind: str):
     remove_existing_layer_for_path(path)
     layer = QgsVectorLayer(str(path), display_name, "ogr")
@@ -622,7 +634,7 @@ def add_vector_to_group(path: Path, display_name: str, group_name: str, index: i
     style_vector(layer, style_kind)
     project = QgsProject.instance()
     root = project.layerTreeRoot()
-    group = root.findGroup(group_name) or root.addGroup(group_name)
+    group = _supplemental_group(root, group_name)
     project.addMapLayer(layer, False)
     group.insertLayer(index, layer)
     return layer
@@ -687,7 +699,7 @@ def add_jshis_wms_fallback(pref_geometry: QgsGeometry):
     layer.setCustomProperty("gcham/jshis_prefecture_clip", True)
 
     root = project.layerTreeRoot()
-    group = root.findGroup("災害") or root.addGroup("災害")
+    group = _supplemental_group(root, "災害")
     project.addMapLayer(layer, False)
     group.insertLayer(2, layer)
 

@@ -208,40 +208,52 @@ def _patch_facilities():
         results = []
         for dataset, yy, year, filename_tpl, title, out_tpl, style in supplemental.FACILITY_SPECS:
             self.check_cancelled()
-            filename = filename_tpl.format(pref=self.pref_code)
-            vectors = self._ksj_vectors(dataset, yy, filename)
-            encoding = None
-            if dataset == "P04":
-                extract = self.cache / "ksj" / dataset / Path(filename).stem
-                gml_vectors = sorted(extract.rglob("*.gml"))
-                if gml_vectors:
-                    vectors = gml_vectors
-                    self.log("P04医療機関: 日本語文字化け回避のためGMLを優先します。")
+            out = None
+            try:
+                filename = filename_tpl.format(pref=self.pref_code)
+                vectors = self._ksj_vectors(dataset, yy, filename)
+                encoding = None
+                if dataset == "P04":
+                    extract = self.cache / "ksj" / dataset / Path(filename).stem
+                    gml_vectors = sorted(extract.rglob("*.gml"))
+                    if gml_vectors:
+                        vectors = gml_vectors
+                        self.log("P04医療機関: 日本語文字化け回避のためGMLを優先します。")
+                    else:
+                        encoding = "CP932"
+                        self.log("P04医療機関: ShapefileをCP932として読み込みます。")
+                out = self.data_dir / out_tpl.format(pref=self.pref_code)
+                qgis_io.remove_existing_layer_for_path(out)
+                out.unlink(missing_ok=True)
+                if dataset == "P04":
+                    _write_p04_vectors(
+                        vectors,
+                        out,
+                        self.target_epsg,
+                        self.log,
+                        self.check_cancelled,
+                        encoding,
+                    )
                 else:
-                    encoding = "CP932"
-                    self.log("P04医療機関: ShapefileをCP932として読み込みます。")
-            out = self.data_dir / out_tpl.format(pref=self.pref_code)
-            qgis_io.remove_existing_layer_for_path(out)
-            out.unlink(missing_ok=True)
-            if dataset == "P04":
-                _write_p04_vectors(
-                    vectors,
-                    out,
-                    self.target_epsg,
-                    self.log,
-                    self.check_cancelled,
-                    encoding,
+                    supplemental._write_merged_vectors(vectors, out, self.target_epsg)
+                results.append(
+                    supplemental.SupplementalResult(
+                        out,
+                        f"{title}_{year}_国土数値情報",
+                        "施設",
+                        style,
+                    )
                 )
-            else:
-                supplemental._write_merged_vectors(vectors, out, self.target_epsg)
-            results.append(
-                supplemental.SupplementalResult(
-                    out,
-                    f"{title}_{year}_国土数値情報",
-                    "施設",
-                    style,
+            except qgis_io.CancelledError:
+                raise
+            except Exception as exc:
+                if out is not None:
+                    qgis_io.remove_existing_layer_for_path(out)
+                    out.unlink(missing_ok=True)
+                self.log(
+                    f"追加データ警告 [施設/{title}]: {exc} "
+                    "このレイヤをスキップして他の施設データを続行します。"
                 )
-            )
         return results
 
     build_facilities._gcham_v112 = True
@@ -254,7 +266,7 @@ def _prepared_prefecture_geometry(pref_geometry: QgsGeometry):
         if not geometry.isGeosValid():
             geometry = geometry.makeValid()
     except Exception:
-        pass
+        geometry = QgsGeometry(pref_geometry)
     engine = None
     try:
         engine = QgsGeometry.createGeometryEngine(geometry.constGet())
@@ -270,7 +282,7 @@ def _intersects_prefecture(engine, pref_geometry: QgsGeometry, feature_geometry:
         try:
             return bool(engine.intersects(feature_geometry.constGet()))
         except Exception:
-            pass
+            return bool(feature_geometry.intersects(pref_geometry))
     return bool(feature_geometry.intersects(pref_geometry))
 
 
