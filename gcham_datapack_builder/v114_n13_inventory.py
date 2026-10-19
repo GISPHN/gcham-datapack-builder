@@ -9,7 +9,7 @@ from . import qgis_io
 
 _APPLIED = False
 LIST_URL = "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N13-2024.html"
-_FILENAME = re.compile(r"N13-24_([0-9]{4})_SHP\\.zip", re.IGNORECASE)
+_FILENAME = re.compile(r"N13-24_([0-9]{4})_SHP\.zip", re.IGNORECASE)
 
 
 def _published_meshes(builder):
