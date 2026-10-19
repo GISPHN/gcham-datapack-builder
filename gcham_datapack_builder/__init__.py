@@ -14,6 +14,8 @@ def classFactory(iface):
     from .v113_preflight_ui import apply_v113_preflight_ui
     from .v113_safety import apply_v113_safety
     from .v113_unified_workflow import apply_v113_unified_workflow
+    from .v114_all_municipalities import apply_v114_all_municipalities
+    from .v114_n13_inventory import apply_v114_n13_inventory
 
     apply_patches()
     apply_followup_patches()
@@ -26,6 +28,8 @@ def classFactory(iface):
     apply_v113_preflight_ui()
     apply_v113_safety()
     apply_v113_unified_workflow()
+    apply_v114_all_municipalities()
+    apply_v114_n13_inventory()
     from .plugin import GCHAMDataPackBuilderPlugin
 
     return GCHAMDataPackBuilderPlugin(iface)
