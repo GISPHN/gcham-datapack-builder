@@ -352,6 +352,8 @@ def _patch_supplemental_only_scope() -> None:
         ):
             v113_layer_selection._add_selected_background_group()
 
+        qgis_io.set_default_plugin_layer_visibility()
+
         processor.progress(100, "選択した追加レイヤの作成が完了しました")
         return [
             result for result in all_results
