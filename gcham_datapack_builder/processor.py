@@ -59,6 +59,7 @@ from .qgis_io import (
     qmeta_string,
     remove_existing_layer_for_path,
     safe_extract_zip,
+    set_default_plugin_layer_visibility,
     valid_zip,
     write_admin_fgb,
 )
@@ -653,7 +654,7 @@ class DataPackProcessor:
         if options.include_background:
             add_background_group()
 
-        qgis_io.set_default_plugin_layer_visibility()
+        set_default_plugin_layer_visibility()
 
         # Enforce the requested top-level order even when groups already existed
         # in the current project from a previous plugin run.
