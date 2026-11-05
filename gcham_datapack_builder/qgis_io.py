@@ -492,7 +492,28 @@ def add_layer_to_group(
         group = root.addGroup(group_name)
     project.addMapLayer(layer, False)
     if index is None:
-        group.addLayer(layer)
+        node = group.addLayer(layer)
     else:
-        group.insertLayer(index, layer)
+        node = group.insertLayer(index, layer)
+    node.setItemVisibilityChecked(style_kind == "admin")
     return layer
+
+
+def set_default_plugin_layer_visibility() -> None:
+    """Show only administrative boundaries and the OpenStreetMap basemap."""
+    root = QgsProject.instance().layerTreeRoot()
+    group_names = (
+        "行政区域", "施設", "交通", "災害", "250mメッシュ人口", "背景地図",
+    )
+    for group_name in group_names:
+        group = root.findGroup(group_name)
+        if group is None:
+            continue
+        for node in group.findLayers():
+            layer = node.layer()
+            if layer is None:
+                continue
+            visible = group_name == "行政区域"
+            if group_name == "背景地図":
+                visible = layer.name().startswith("OpenStreetMap(Standard)_")
+            node.setItemVisibilityChecked(visible)
