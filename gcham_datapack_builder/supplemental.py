@@ -636,7 +636,8 @@ def add_vector_to_group(path: Path, display_name: str, group_name: str, index: i
     root = project.layerTreeRoot()
     group = _supplemental_group(root, group_name)
     project.addMapLayer(layer, False)
-    group.insertLayer(index, layer)
+    node = group.insertLayer(index, layer)
+    node.setItemVisibilityChecked(False)
     return layer
 
 
