@@ -653,6 +653,8 @@ class DataPackProcessor:
         if options.include_background:
             add_background_group()
 
+        qgis_io.set_default_plugin_layer_visibility()
+
         # Enforce the requested top-level order even when groups already existed
         # in the current project from a previous plugin run.
         if options.include_disaster:
